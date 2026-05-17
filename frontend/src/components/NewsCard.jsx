@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-// import { toggleBookmark } from "../services/api";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { toggleBookmarkApi } from "../services/api";
 
 function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
   const { user } = useAuth();
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const timeAgo = (date) => {
     const diff = Math.floor((Date.now() - new Date(date)) / 60000);
@@ -16,12 +16,19 @@ function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
     return `${Math.floor(diff / 1440)}d ago`;
   };
 
+  const handleProtectedClick = (e) => {
+    if (!user) {
+      e.preventDefault();
+      navigate("/login");
+    }
+  };
+
   const handleBookmark = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!user) {
-      alert("Please login to bookmark articles");
+      navigate("/login");
       return;
     }
 
@@ -30,8 +37,7 @@ function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
       const res = await toggleBookmarkApi(article._id);
       setBookmarked(res.data.bookmarked);
     } catch (err) {
-      console.error("Bookmark error:", err.response?.data || err.message); // ← shows real error
-      alert("Failed to bookmark. Try again.");
+      console.error("Bookmark error:", err.response?.data || err.message);
     } finally {
       setLoading(false);
     }
@@ -39,8 +45,11 @@ function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
 
   return (
     <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-sky-500 transition-all duration-200 flex flex-col h-full">
-      {/* Image */}
-      <Link to={`/article/${article._id}`}>
+      {/* Image — clickable only if logged in */}
+      <Link
+        to={user ? `/article/${article._id}` : "/login"}
+        onClick={!user ? handleProtectedClick : undefined}
+      >
         <div className="relative">
           {article.urlToImage ? (
             <img
@@ -54,6 +63,8 @@ function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
               <span className="text-4xl">📰</span>
             </div>
           )}
+
+          {/* Bookmark button */}
           <button
             onClick={handleBookmark}
             disabled={loading}
@@ -68,7 +79,6 @@ function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
         </div>
       </Link>
 
-      {/* Content — flex-1 so it stretches */}
       <div className="p-4 flex flex-col flex-1">
         {/* Source + Time */}
         <div className="flex items-center justify-between mb-2">
@@ -85,28 +95,42 @@ function NewsCard({ article, isBookmarked: initialBookmarked = false }) {
           {article.category || "General"}
         </span>
 
-        {/* Title — fixed 2 line clamp */}
-        <Link to={`/article/${article._id}`}>
+        {/* Title — redirect to login if not logged in */}
+        <Link
+          to={user ? `/article/${article._id}` : "/login"}
+          onClick={!user ? handleProtectedClick : undefined}
+        >
           <h2 className="text-white font-semibold text-sm leading-snug mb-3 hover:text-sky-400 transition-colors line-clamp-2">
             {article.title}
           </h2>
         </Link>
 
-        {/* Description — fixed 2 line clamp */}
+        {/* Description */}
         {article.description && (
           <p className="text-slate-400 text-xs leading-relaxed mb-4 line-clamp-2">
             {article.description}
           </p>
         )}
 
-        {/* Buttons — always at bottom using mt-auto */}
+        {/* Buttons */}
         <div className="flex flex-col gap-2 mt-auto">
-          <Link
-            to={`/article/${article._id}`}
-            className="w-full text-center text-xs bg-sky-600 hover:bg-sky-500 text-white py-2.5 px-3 rounded-lg transition-colors font-medium"
-          >
-            ✨ AI Summary
-          </Link>
+          {user ? (
+            // Logged in — normal navigation
+            <Link
+              to={`/article/${article._id}`}
+              className="w-full text-center text-xs bg-sky-600 hover:bg-sky-500 text-white py-2.5 px-3 rounded-lg transition-colors font-medium"
+            >
+              ✨ AI Summary
+            </Link>
+          ) : (
+            // Not logged in — redirect to login with message
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full text-center text-xs bg-sky-600 hover:bg-sky-500 text-white py-2.5 px-3 rounded-lg transition-colors font-medium"
+            >
+              🔒 Login for AI Summary
+            </button>
+          )}
 
           <a
             href={article.url}
