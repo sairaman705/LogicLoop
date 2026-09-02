@@ -1,7 +1,11 @@
 import axios from "axios";
 
+// const api = axios.create({
+//   baseURL: "http://localhost:5000/api",
+// });
+
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://logicloop-backend.onrender.com/api",
 });
 
 // Attach token to every request automatically
