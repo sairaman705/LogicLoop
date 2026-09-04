@@ -13,7 +13,7 @@ export const summarizeArticle = async (req, res) => {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
       messages: [
         {
           role: "user",
@@ -71,7 +71,7 @@ export const chatWithArticle = async (req, res) => {
     ];
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
       messages,
       max_tokens: 400,
     });
